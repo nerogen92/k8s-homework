@@ -13,3 +13,4 @@
 ![screen](./pod2.png "screen")
 3. curl результата:
 ![screen](./curl2.png "screen")
+
