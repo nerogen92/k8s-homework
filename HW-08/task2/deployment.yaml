@@ -1,0 +1,122 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <title>Netology homework-08</title>
+    </head>
+    <body>
+    <h1>Welcome to Netology!</h1><br>
+    <h2>It is Homework-08!</h2>
+    </body>
+    </html>
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        server {
+            listen 80;
+            location / {
+                root /usr/share/nginx/html;
+                index index.html;
+            }
+        }
+    }
+...
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment-nginx
+  labels:
+    app: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+        volumeMounts:
+        - mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+          name: nginx-config
+        - mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+          name: nginx-config
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-config
+
+...
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+  namespace: default
+spec:
+  selector:
+    app: nginx
+  ports:
+    - name: http
+      port: 80
+    - name: https
+      port: 443
+...
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tls-secret
+  namespace: default
+type: kubernetes.io/tls
+data:
+  tls.crt: |-
+    LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURQekNDQWllZ0F3SUJBZ0lVUGMzQlJVSW9IQmxJVWd4ZDJ0aFc0amZGYnR3d0RRWUpLb1pJaHZjTkFRRUwKQlFBd0x6RVpNQmNHQTFVRUF3d1FhM1ZpWlM1dVpYSnZhRzl0WlM1eWRURVNNQkFHQTFVRUNnd0pUWGxEYjIxdwpZVzU1TUI0WERUSTBNRGN5TURFeE5EWXlNRm9YRFRJMU1EY3lNREV4TkRZeU1Gb3dMekVaTUJjR0ExVUVBd3dRCmEzVmlaUzV1WlhKdmFHOXRaUzV5ZFRFU01CQUdBMVVFQ2d3SlRYbERiMjF3WVc1NU1JSUJJakFOQmdrcWhraUcKOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQTc2ZExDNzNGVG5KN1hITjF5M0ovUEI4QzdzMWptUFdROTVZKwpXRjVsSXlDVFNaQlVveGd3SDdMM3Fhc0NIcEJsSzNKOTlieEg4eFBxSm5PM2dmRCtTdWx4ekpsT3RZak8yWStZCmwrZWlhbVJyK1BneHVJN212T041RGpkM1B0SjY2dHNoTU44S2Z3TDJSN0t5aXphOWcreEZQNmJIRlJVUE4zM0UKaGtYTHJCWGtwSmZpMk9sT2ovVGdueGcwQThLMjNDYWNUcXRCaVEyVFJ5OWJ1cHNSVFF1MXRmQTlGVkpaVFRTYwpVQlBPQXdqU0FTTm1kQjJycy9PUTZ3K0FFeFhzK1JpTFZtc2h6cDNCeUI4ZGs3bXVYUFVOOCtOWEdJMmI5TXpxCndIbEQzamE4Z2ZsVDJnVkFwTFlmS0JIZ2FSMVZsRVgrbjNWWko3SjRGbXpZOEZQaFN3SURBUUFCbzFNd1VUQWQKQmdOVkhRNEVGZ1FVeG0vTVBoVFE0ekpmbHlQTUd1RXZnUmtabVo0d0h3WURWUjBqQkJnd0ZvQVV4bS9NUGhUUQo0ekpmbHlQTUd1RXZnUmtabVo0d0R3WURWUjBUQVFIL0JBVXdBd0VCL3pBTkJna3Foa2lHOXcwQkFRc0ZBQU9DCkFRRUF6RytSZHZ3UXh4Z3lJdXdaekQvdzEwSGgvamJaR2UzWVJRWWgwbEZFVVdvc1hPa1FVZXZZeFpUaDdML0kKcktWYWZOSUg2MUJ2S2U0UitOanRxRE56VGVnWk15bzFOY2p3Y0poREEzWktEUGE1amVyTEg0THFmeGZRak1oTQpyV3lzd0FtQTNBV1BpejltTllTbU1Qdjk2YndvZjRZbDN2ZXFQNXdhK25JQ3RPaGxLRW9TL0IxS0VIN2ViNHZnCktDbytzRXBDNnVxc2xwVGE1YkFLWFc4Zi9CTllJU3NPL3RlN29GckxFUGNKMW41K2kyYkdnRmxPaE5IT2VxeXgKbjUwS2NheHNpbldKdjlYNnBFSjh0QlJ6M0lvSktSWDREdnkwQlFPdzJ4eXpkZmhpVW9xSXlVbmdzUU01MHRrNgp2dWZQbWhaemljdGlXQzVrdi9OV0JQenVJdz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+  tls.key: |-
+    LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2Z0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktnd2dnU2tBZ0VBQW9JQkFRRHZwMHNMdmNWT2NudGMKYzNYTGNuODhId0x1eldPWTlaRDNsajVZWG1VaklKTkprRlNqR0RBZnN2ZXBxd0lla0dVcmNuMzF2RWZ6RStvbQpjN2VCOFA1SzZYSE1tVTYxaU03Wmo1aVg1NkpxWkd2NCtERzRqdWE4NDNrT04zYyswbnJxMnlFdzN3cC9BdlpICnNyS0xOcjJEN0VVL3BzY1ZGUTgzZmNTR1JjdXNGZVNrbCtMWTZVNlA5T0NmR0RRRHdyYmNKcHhPcTBHSkRaTkgKTDF1Nm14Rk5DN1cxOEQwVlVsbE5OSnhRRTg0RENOSUJJMlowSGF1ejg1RHJENEFURmV6NUdJdFdheUhPbmNISQpIeDJUdWE1YzlRM3o0MWNZalp2MHpPckFlVVBlTnJ5QitWUGFCVUNrdGg4b0VlQnBIVldVUmY2ZmRWa25zbmdXCmJOandVK0ZMQWdNQkFBRUNnZ0VBVlg1TlA5bUpyelFZL1FDMWg0Z0hpdGVYVU1DVnBNWUoyc0ZPNlhCM1RRSTgKZVBSVHRVRVdQZUMzQ0dDWXAzV2ttY3pFMGFyQzBoMExIWCtQZWZ3U2czL25HSEdpaWhGTmxZQnNFOWpPOEh4MQpwa0pJWG9vZ0YwZGc4cWpuMGRIOWhwWDRyN29Kd1FpNStoYnVLY3F6N2dHV0xLQmZDZzdTdUYyV0E3NlhhNEpOCkxsdU1ERlhrdUNVZmRTYzVsdVRCVWtyTm9UQXFhRG9LcUU4VU5VUTQyUXU2YW9aRSsvN2FadktBWldBckxFRGEKRGNsbkZqLzJMOCsxV0dNQWQvRlF5bFExc05iTzFRM1FZT2V5aWpVRjdvVVdxTHZsbUpENzBpbGl0cHNaSzc2SgpvVzNRVlBieCtSa0JuamJ4N3JZbElyaTlaQlVBalNySnozWUM3cEpZblFLQmdRRDR3T0VDMzIxMmFGYjlGblJqCkFVSFNRTmZOTE5ZK2hXTDhCazg4Y3NoZm9scG1nRkpqUW05ZXJ3QThxV1Z3R3BCd0hST3FEL3RBUytEazVKREcKbW1Eci81YUQya2FMM1FDMW13ME1ZNW9NN3NXWmxoekJmNTBPZWVJN1dqMWtZUGtDTzZaSkxJOEJ6M3IxUm5yNAo1YkM2QWpMQ3VwYjhqV2ZRVlNtUUh4OVB6UUtCZ1FEMm9vekFqNXNNOHRpWnJoZHhlNVVMTHFLem1zTjFVSW9zCjRqSWRKRDRXaWQxSXVYTWhXYWNTN2J2WWlFaXJuU3NmZXFIVU80c0xsUWlvSFlIelp0OUxjcWYyNkEySGRBdWkKckRVYlk0UDlOMkd2UkZ4WE5pZk9jQ0pxVkEzSnMyOUlPN2hiWlcwRDlnZ0duWFdYODErd1MyUHFnd2ljSkcrRApMM3JJMUhudGR3S0JnUUNVeE80TmhNaDNoMkYzRGFYZnpGR3NTRUdJSU9lbERxc3JaUzZnVFZtTzhJODJQRXFKCnVLTFlzcnJtakx6dzljSXFld2xXclNZcnh2V2lqeHdTMnlOYUlVcklZcFBNZEFsSGs0cVRQVUpWdDd1UDVsb2UKVTQ3L3FGOW45Y2svcmt0ZVRZUmV3UHBxTDhjdXg4OGw2bUR1YmdBanUrb3U4dmNDZnR4VHFIbFdoUUtCZ0d5eApBanF5anZCTDdhejhqaFJURkVJVFVWeTVyYjM3dW9sQlBqaWRpa2RBaHFiUUk2N2s1YjV2eXNNSWZJNDArNVlwCjR6dTI2ZlkydmRQby9TWVpoZnFvRXVHN0xvc3RWeHRmclIvZTRZSXNiLzVmc0JvM0laL1d4elA0eXdMQzh4M3cKUTdUem8vR0U4ZENJZ0JSeEN4Q1VpUG9HdVRxbXpBWVNYSmc1RzJyTkFvR0JBS2FIeXRGY0tFMmNKcHhIQnJtOAo4OTJ4bFVxQXdGR3ZFbm01NXcrTXozZWU5ZXg2Q2tmV1J0dTd3Nnllbmc4N3FpSVltTFNDcnR4UnBsc3hTcUlqCkVBaTJyRlVEbE1CNkRUWUVtbmR1VDVVUzhOMkZ4dkN5Uk9LelR1ZXNzSG53WE5RNEZ4RDBqK281SSsvRWVNdWwKeU9hSWlQSy9RbFpNSExzdzJVajB1MTlXCi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K
+...
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-kube-nerohome-ru
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+    - host: kube.nerohome.ru
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx-service
+                port:
+                  number: 80
+  tls:
+  - hosts:
+    - kube.nerohome.ru
+    secretName: tls-secret
+...
