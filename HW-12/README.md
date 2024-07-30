@@ -10,5 +10,5 @@
 2. **Установлен через kubespray (1 мастер и 2 воркера):**
 - ip 192.168.31.203-205
 - version k8s - 1.29.5
-- CNI - flannel
+- CNI - calico
 - ![screen](./screen2.png "screen")
